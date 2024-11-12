@@ -56,6 +56,7 @@ This project is a batch processing application designed to generate billing repo
 
 JobParameters are typically used to distinguish one JobInstance from another. In other words, they are used to identify a specific JobInstance.
 
+[//]: # (TODO: ADD link to docs at README, pass some information to a separeted md file and add docker-compose file to postgresql)
 
 #### Life cycle of a JobInstance
 ![life cycle jobinstance](https://raw.githubusercontent.com/vmware-tanzu-learning/spring-academy-assets/main/courses/course-spring-batch-essentials/lifecycle-example.svg)
