@@ -2,7 +2,9 @@ package br.com.gabezy.billingjob.config;
 
 import br.com.gabezy.billingjob.domain.BillingData;
 import br.com.gabezy.billingjob.domain.ReportingData;
+import br.com.gabezy.billingjob.listeners.BillingDataSkipListener;
 import br.com.gabezy.billingjob.processors.BillingDataProcessor;
+import br.com.gabezy.billingjob.services.PricingService;
 import br.com.gabezy.billingjob.steps.CleanupBillingDatabaseStep;
 import br.com.gabezy.billingjob.steps.FilePreparationTasklet;
 import org.springframework.batch.core.Job;
@@ -20,6 +22,7 @@ import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilde
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.FlatFileItemWriter;
+import org.springframework.batch.item.file.FlatFileParseException;
 import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.builder.FlatFileItemWriterBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,12 +43,15 @@ public class BillingJobConfig {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private PricingService pricingService;
+
     @Bean
     public Job job(JobRepository jobRepository, Step step1, Step cleanupBillingTableStep
             ,Step step2, Step step3) {
         return new JobBuilder("BillingJob", jobRepository)
                 .start(step1)
-                .next(cleanupBillingTableStep)
+//                .next(cleanupBillingTableStep)
                 .next(step2)
                 .next(step3)
                 .build();
@@ -66,13 +72,24 @@ public class BillingJobConfig {
 
     @Bean
     public Step step2(JobRepository repository, PlatformTransactionManager transactionManager,
-            ItemReader<BillingData> billingDataFileReader, ItemWriter<BillingData> billingDataTableWriter) {
+                      ItemReader<BillingData> billingDataFileReader, ItemWriter<BillingData> billingDataTableWriter,
+                      BillingDataSkipListener skipListener) {
         return new StepBuilder("fileIngestion", repository)
                 // input        output      of the step
                 .<BillingData, BillingData>chunk(100, transactionManager)
                 .reader(billingDataFileReader)
                 .writer(billingDataTableWriter)
+                .faultTolerant()
+                .skip(FlatFileParseException.class)
+                .skipLimit(10)
+                .listener(skipListener)
                 .build();
+    }
+
+    @Bean
+    @StepScope
+    public BillingDataSkipListener skipListener(@Value("#{jobParameters['skip.file']}") String skippedFile) {
+        return new BillingDataSkipListener(skippedFile);
     }
 
     @Bean
@@ -85,6 +102,9 @@ public class BillingJobConfig {
                 .reader(billingDataTableReader)
                 .processor(billingDataProcessor)
                 .writer(billingDataFileWriter)
+                .faultTolerant()
+                .retry(PricingException.class)
+                .retryLimit(100)
                 .build();
     }
 
@@ -131,7 +151,7 @@ public class BillingJobConfig {
 
     @Bean
     public BillingDataProcessor billingDataProcessor() {
-        return new BillingDataProcessor();
+        return new BillingDataProcessor(pricingService);
     }
 
     @Bean
