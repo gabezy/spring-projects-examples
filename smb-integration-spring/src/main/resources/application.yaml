@@ -1,0 +1,27 @@
+smb-integration:
+  host: ${HOST:localhost}
+  domain: ${DOMAIN:WORKGROUP}
+  share-path: ${SHARE.PATH:/Shared}
+  username: ${USERNAME:admin}
+  password: ${PASSWORD:secret}
+---
+spring:
+  application:
+    name: smb-integration-spring
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;INIT=CREATE SCHEMA IF NOT EXISTS SMB_INTEGRATION;DB_CLOSE_DELAY=-1
+    hikari:
+      schema: SMB_INTEGRATION
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    database: h2
+  flyway:
+    enabled: true
+    default-schema: SMB_INTEGRATION
+    locations: classpath:db/migration
