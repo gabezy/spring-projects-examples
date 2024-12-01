@@ -97,3 +97,19 @@ private ResponseEntity<List<CashCard>> findAll(Pageable pageable) {
    return ResponseEntity.ok(page.getContent()); // page.getContent() -> to just get the objects list and not the whole Pagination object
 }
 ```
+
+## Put and Patch
+
+`PUT` and `PATCH ` http methods can be used to update a resource, but they work in different ways. Generally, `PUT` means "create or replace the complete record", whereas `PATCH` means "update only specifics fields of the existing record" - *in other words, a partial update*.
+
+### Surrogate and Natural Keys
+
+- **Surrogate Keys:** When the server handles and generate the resource's unique identifier.
+- **Natural Keys:** When the client supplies the resource's unique identifier.
+
+### Resources and Sub-Resources
+
+- `POST` **creates a sub-resource (child resource) under (after), or within the request URI**. The client calls the Create endpoint at `POST /cashcards`, but the actual URI of the created resource contains a generated ID at the end: `/cashcards/101`.
+- `PUT` **creates or replaces (updates) a resource at a specific request URI**. the Create endpoint would be `PUT /invoice/1234-567`, and the URI of the created resource would be the same as the URI sent in the PUT request.
+
+
